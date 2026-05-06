@@ -53,9 +53,8 @@ export default function Article() {
 
   if (loading) {
     return (
-      <div className="news-container py-20 text-center">
-        <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin mx-auto mb-4" />
-        <h2 className="text-xl font-serif text-neutral-400 uppercase tracking-widest">Retrieving Dispatch...</h2>
+      <div className="news-container py-40 text-center flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin mb-4" />
       </div>
     );
   }
@@ -178,7 +177,7 @@ export default function Article() {
               <div className="hidden xl:flex flex-col gap-6">
                 <div className="text-[10px] font-black uppercase tracking-widest text-[#003366] border-b border-neutral-100 pb-2">Editorial Context</div>
                 <p className="text-[11px] text-neutral-500 italic leading-relaxed">
-                  This dispatch has been analyzed by our automated editorial board. We maintain strict objectivity standards 
+                  This dispatch has been reviewed by our international editorial board. We maintain strict objectivity standards 
                   across all global technological and economic reports.
                 </p>
                 <div className="p-4 bg-neutral-50 border border-neutral-100 rounded-sm">

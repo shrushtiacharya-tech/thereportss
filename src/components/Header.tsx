@@ -3,7 +3,7 @@ import { Search, Menu, User, X, Zap, TrendingUp } from 'lucide-react';
 import { CATEGORIES } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useNews } from '../hooks/useNews';
+import { useNewsContext } from '../contexts/NewsContext';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -99,7 +99,6 @@ export default function Header() {
           </ul>
 
           <div className="flex-grow md:hidden px-4 flex items-center gap-2">
-             <span className="text-[10px] font-black uppercase tracking-widest text-[#003366] whitespace-nowrap">Global News Buffer</span>
              <div className="h-px w-full bg-neutral-100" />
           </div>
 
@@ -113,19 +112,6 @@ export default function Header() {
           </div>
         </div>
       </nav>
-
-      {/* Breaking News Ticker */}
-      <div className="bg-black text-white overflow-hidden py-1.5 md:py-2 border-b border-black">
-        <div className="news-container flex items-center gap-4">
-          <div className="flex items-center gap-2 whitespace-nowrap border-r border-white/20 pr-4">
-            <div className="w-1.5 h-1.5 bg-news-red rounded-full animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Live Updates</span>
-          </div>
-          <div className="relative flex-grow h-4 overflow-hidden">
-             <TickerContent />
-          </div>
-        </div>
-      </div>
 
       {/* Mobile Drawer */}
       <AnimatePresence>
@@ -195,33 +181,5 @@ export default function Header() {
         )}
       </AnimatePresence>
     </header>
-  );
-}
-
-function TickerContent() {
-  const { news } = useNews(5);
-  
-  if (!news || news.length === 0) return <div className="text-[10px] font-mono uppercase tracking-widest opacity-50">Syncing with global dispatch...</div>;
-
-  return (
-    <motion.div 
-      initial={{ y: 20 }}
-      animate={{ y: 0 }}
-      className="flex gap-10 whitespace-nowrap"
-    >
-      <div className="flex gap-10 animate-marquee">
-        {news.map((item: any, i: number) => (
-          <Link 
-            key={item.id + i} 
-            to={`/article/${item.id}`}
-            className="text-[10px] font-bold uppercase tracking-widest hover:text-news-red transition-colors"
-          >
-            <span className="text-news-red mr-2 font-black">•</span>
-            {item.title}
-          </Link>
-        ))}
-      </div>
-      {/* Duplicate for seamless loop if needed, but for now simple marquee is fine */}
-    </motion.div>
   );
 }

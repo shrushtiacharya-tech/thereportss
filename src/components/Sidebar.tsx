@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNews } from '../hooks/useNews';
+import { useNewsContext } from '../contexts/NewsContext';
 import { TrendingUp, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface MarketItem {
   code: string;
@@ -21,8 +22,9 @@ const INITIAL_MARKET_DATA: MarketItem[] = [
 ];
 
 export default function Sidebar({ showHeader = true }: SidebarProps) {
-  const { news: trending } = useNews(5, 'All', 'trending');
+  const { trendingNews: trending } = useNewsContext();
   const [markets, setMarkets] = useState<MarketItem[]>(INITIAL_MARKET_DATA);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMarkets = async () => {
@@ -86,7 +88,7 @@ export default function Sidebar({ showHeader = true }: SidebarProps) {
               key={article.id} 
               className="group flex gap-4 py-5 border-b border-neutral-100 last:border-0 cursor-pointer"
               onClick={() => {
-                window.location.href = `/article/${article.id}`;
+                navigate(`/article/${article.id}`);
                 window.scrollTo(0, 0);
               }}
             >

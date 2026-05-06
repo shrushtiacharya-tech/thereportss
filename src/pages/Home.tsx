@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { CATEGORIES } from '../data';
 import { useNavigate } from 'react-router-dom';
 import { useNews } from '../hooks/useNews';
+import { useNewsContext } from '../contexts/NewsContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { formatTimeAgo } from '../lib/dateUtils';
@@ -13,17 +14,34 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'latest' | 'trending'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const { latestNews, trendingNews, loading: isContextLoading, error: contextError } = useNewsContext();
   
-  const { news: liveNews, loading: isLiveLoading } = useNews(40, selectedCategory, sortBy);
+  // Use custom hook for category filtering, but fallback to context for "All"
+  const { news: categoryNews, loading: isCategoryLoading, error: categoryError } = useNews(
+    40, 
+    selectedCategory === 'All' ? undefined : selectedCategory, 
+    sortBy
+  );
+
+  const error = categoryError || contextError;
+
+  const displayNews = useMemo(() => {
+    if (selectedCategory === 'All') {
+      return sortBy === 'latest' ? latestNews : trendingNews;
+    }
+    return categoryNews;
+  }, [selectedCategory, sortBy, latestNews, trendingNews, categoryNews]);
+
+  const isLoading = selectedCategory === 'All' ? isContextLoading : isCategoryLoading;
 
   const filteredNews = useMemo(() => {
-    if (!searchQuery) return liveNews;
+    if (!searchQuery) return displayNews;
     const query = searchQuery.toLowerCase();
-    return liveNews.filter(n => 
+    return displayNews.filter(n => 
       n.title.toLowerCase().includes(query) || 
       n.summary.toLowerCase().includes(query)
     );
-  }, [liveNews, searchQuery]);
+  }, [displayNews, searchQuery]);
 
   const heroArticle = filteredNews[0];
   const gridArticles = filteredNews.slice(1, 7);
@@ -79,10 +97,9 @@ export default function Home() {
         </div>
       </div>
 
-      {isLiveLoading ? (
+      {isLoading ? (
         <div className="py-20 text-center flex flex-col items-center gap-4">
            <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin" />
-           <p className="text-[10px] font-mono text-neutral-400 uppercase tracking-[0.5em]">Synchronizing Feed...</p>
         </div>
       ) : filteredNews.length === 0 ? (
         <div className="py-40 text-center">

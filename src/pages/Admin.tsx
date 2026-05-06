@@ -10,10 +10,12 @@ import {
   getDocs, 
   setDoc, 
   getDoc,
-  onSnapshot
+  onSnapshot,
+  where
 } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../lib/firebase';
 import { NewsItem } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
@@ -43,6 +45,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -89,10 +92,15 @@ export default function Admin() {
     setLoading(true);
     
     // Listen for news updates
-    const q = query(collection(db, 'news'), orderBy('publishedAt', 'desc'));
+    const q = query(
+      collection(db, 'news'), 
+      where('originalUrl', '==', 'manual-entry'),
+      orderBy('publishedAt', 'desc')
+    );
     const unsubNews = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NewsItem));
       setNews(items);
+      setError(null);
       
       // Calculate Analytics
       const totalViews = items.reduce((acc, item) => acc + (item.views || 0), 0);
@@ -115,6 +123,8 @@ export default function Admin() {
       
       setLoading(false);
     }, (err) => {
+      console.error("News snapshot error:", err);
+      setError("Database Quota Reached or Network Issue");
       handleFirestoreError(err, OperationType.LIST, 'news');
     });
 
@@ -215,9 +225,9 @@ export default function Admin() {
           let width = img.width;
           let height = img.height;
 
-          // Max dimensions
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 800;
+          // Max dimensions reduced for safety
+          const MAX_WIDTH = 1000;
+          const MAX_HEIGHT = 700;
 
           if (width > height) {
             if (width > MAX_WIDTH) {
@@ -236,8 +246,8 @@ export default function Admin() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
 
-          // Quality adjustment to ensure it stays well under 1MB
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          // Quality reduced to 0.6 to ensure it stays well under 1MB even with body text
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
           resolve(dataUrl);
         };
         img.onerror = reject;
@@ -255,9 +265,12 @@ export default function Admin() {
       try {
         const resizedImage = await resizeImage(file);
         
-        // Final sanity check on base64 size (approx 0.75 ratio for base64 vs binary)
-        if (resizedImage.length > 800000) { // Limit to ~800KB
-          alert("Image is still too large after compression. Please use a smaller visual.");
+        // Final sanity check on base64 size
+        // 1MB = 1,048,576 bytes. 
+        // We want to leave room for the article content (~200KB)
+        // So we limit image to ~700,000 chars in base64 (~525KB binary)
+        if (resizedImage.length > 700000) { 
+          alert("Image is still too large after compression. Please use a smaller visual or one with less detail.");
           return;
         }
         
@@ -389,7 +402,7 @@ export default function Admin() {
                   <label className="label-caps mb-2 block">Headline of Professional Record</label>
                   <input 
                     required
-                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-lg font-serif focus:outline-none focus:border-news-red transition-all"
+                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-base md:text-lg font-serif focus:outline-none focus:border-news-red transition-all"
                     value={formData.title}
                     onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter analytical title..."
@@ -399,7 +412,7 @@ export default function Admin() {
                 <div>
                   <label className="label-caps mb-2 block">Vertical</label>
                   <select 
-                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-xs font-black uppercase tracking-widest focus:outline-none focus:border-news-red appearance-none"
+                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-[16px] md:text-xs font-black uppercase tracking-widest focus:outline-none focus:border-news-red appearance-none"
                     value={formData.category}
                     onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   >
@@ -429,17 +442,20 @@ export default function Admin() {
                       </button>
                     </div>
                   ) : (
-                    <label className="w-full aspect-[21/9] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-100 hover:border-news-blue transition-all group">
+                    <label className="w-full aspect-[4/3] md:aspect-[21/9] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-100 hover:border-news-blue transition-all group p-8">
                       <input 
                         type="file" 
                         accept="image/*" 
                         onChange={handleImageUpload}
                         className="hidden" 
                       />
-                      <div className="p-4 rounded-full bg-white shadow-sm border border-neutral-100 group-hover:scale-110 transition-transform">
-                        <Upload size={24} className="text-neutral-400 group-hover:text-news-blue" />
+                      <div className="p-6 rounded-full bg-white shadow-sm border border-neutral-100 group-hover:scale-110 transition-transform">
+                        <Upload size={32} className="text-[#003366]" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Transmit Visual Signal (Max 2MB)</span>
+                      <div className="text-center">
+                        <span className="text-[12px] font-black uppercase tracking-widest text-[#003366] block mb-1">Add Editorial Photo</span>
+                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Mobile Camera or Gallery (Max 2MB)</span>
+                      </div>
                     </label>
                   )}
                 </div>
@@ -449,7 +465,7 @@ export default function Admin() {
                 <label className="label-caps mb-2 block">Report Teaser (Summary)</label>
                 <textarea 
                   required
-                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-4 text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[100px] transition-all"
+                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-4 text-[16px] md:text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[100px] transition-all"
                   value={formData.summary}
                   onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
                   placeholder="One or two sentence teaser..."
@@ -460,7 +476,7 @@ export default function Admin() {
                 <label className="label-caps mb-2 block">Analytical Context & Dispatch Body</label>
                 <textarea 
                   required
-                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-6 text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[350px] transition-all"
+                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-6 text-[16px] md:text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[350px] transition-all"
                   value={formData.body}
                   onChange={e => setFormData(prev => ({ ...prev, body: e.target.value }))}
                   placeholder="Drafting the detailed editorial summary (400-600 words)..."
@@ -509,7 +525,7 @@ export default function Admin() {
                   )}
                   <button 
                     disabled={isSubmitting}
-                    className="bg-black text-white px-12 py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-news-red transition-all shadow-xl disabled:opacity-50"
+                    className="w-full md:w-auto bg-black text-white px-12 py-5 text-xs font-black uppercase tracking-[0.3em] hover:bg-news-red transition-all shadow-xl disabled:opacity-50"
                   >
                     {isSubmitting ? "Processing..." : "Commit Dispatch"}
                   </button>

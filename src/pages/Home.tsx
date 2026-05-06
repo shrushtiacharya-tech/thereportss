@@ -103,7 +103,7 @@ export default function Home() {
         </div>
       ) : filteredNews.length === 0 ? (
         <div className="py-40 text-center">
-           <h3 className="text-2xl font-serif font-black mb-4">No Dispatches Found</h3>
+           <h3 className="text-2xl font-serif font-black mb-4">No Articles Found</h3>
            <p className="text-neutral-500 font-mono text-xs uppercase tracking-widest">Adjust your filters or query to refine search</p>
         </div>
       ) : (

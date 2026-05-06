@@ -15,7 +15,9 @@ interface NewsContextType {
 const NewsContext = createContext<NewsContextType | undefined>(undefined);
 
 const CACHE_KEY = 'thereports_news_cache';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY = 60 * 60 * 1000; // 60 minutes
+const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
+const QUOTA_BACKOFF_DURATION = 60 * 60 * 1000; // 1 hour
 
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
@@ -24,13 +26,18 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   const fetchNews = useCallback(async () => {
+    // Check backoff first
+    const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
+    const hasBackoff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < QUOTA_BACKOFF_DURATION);
+
     // Check cache first (prefer fresh cache)
     const cached = localStorage.getItem(CACHE_KEY);
     let cachedData: any = null;
     if (cached) {
       try {
         cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
+        // If we have backoff OR cache is fresh, use cache and don't fetch
+        if (hasBackoff || (Date.now() - cachedData.timestamp < CACHE_EXPIRY)) {
           setLatestNews(cachedData.data.latest);
           setTrendingNews(cachedData.data.trending);
           setLoading(false);
@@ -40,6 +47,11 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {
         console.error("Cache parse error", e);
       }
+    }
+
+    if (hasBackoff) {
+      setLoading(false);
+      return;
     }
 
     try {
@@ -83,22 +95,22 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(null);
       }
     } catch (err: any) {
-      console.error("News fetch error:", err);
-      
       // If we have ANY cached data, even stale, use it as fallback
       if (cachedData) {
         setLatestNews(cachedData.data.latest);
         setTrendingNews(cachedData.data.trending);
-        setError("Operating from archive cache (Network limit reached)");
       } else {
         setLatestNews([]);
         setTrendingNews([]);
-        setError("Sync unavailable. Please try again later.");
       }
       
-      // Log firestore error if it's a quota issue
+      // Log firestore error if it's a quota issue and set backoff
       if (err.message?.includes("Quota")) {
-        handleFirestoreError(err, OperationType.LIST, 'news');
+        localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
+        // We catch it here to prevent throwing and causing the error log in the UI
+        console.warn("Firestore Quota hit. Backing off.");
+      } else {
+        setError("Synchronization issue. Please try again later.");
       }
     } finally {
       setLoading(false);

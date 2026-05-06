@@ -132,7 +132,7 @@ export default function Header() {
               className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-paper z-[101] shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b-4 border-black flex justify-between items-center bg-[#003366] text-white">
-                <span className="text-xs font-black uppercase tracking-[0.3em]">Dispatch Center</span>
+                <span className="text-xs font-black uppercase tracking-[0.3em]">Navigation</span>
                 <button onClick={() => setMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>
@@ -173,7 +173,7 @@ export default function Header() {
                     {today}
                  </p>
                  <p className="text-[9px] text-neutral-400 uppercase font-bold tracking-tighter">
-                   Authenticated Journal of Record // v2.0 Dispatch
+                   Authenticated Journal of Record // v2.0
                  </p>
               </div>
             </motion.div>

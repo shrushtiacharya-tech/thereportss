@@ -62,7 +62,7 @@ export default function Article() {
   if (!article) {
     return (
       <div className="news-container py-20 text-center">
-        <h2 className="text-3xl font-serif font-black mb-4">Dispatch Not Found</h2>
+        <h2 className="text-3xl font-serif font-black mb-4">Article Not Found</h2>
         <Link to="/" className="text-[#003366] font-bold uppercase tracking-widest hover:underline">
           Return to Front Page
         </Link>
@@ -82,7 +82,7 @@ export default function Article() {
           {/* Article Header: Full Width */}
           <header className="flex flex-col gap-6 mb-12">
             <div className="text-[9px] font-black uppercase tracking-[0.4em] text-news-red mb-2">
-              {article.category} // dispatch report
+              {article.category} // editorial report
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-black leading-[1.1] text-ink mb-2 tracking-tight">
               {article.title}
@@ -101,7 +101,7 @@ export default function Article() {
                   />
                 </div>
                 <figcaption className="mt-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 border-l border-neutral-200 pl-4 py-1">
-                  Dispatch Attachment // Reference Archive Entry TR-SIGNAL
+                  Editorial Record // Source Reference TR-SIGNAL
                 </figcaption>
               </figure>
             )}
@@ -127,7 +127,7 @@ export default function Article() {
                 <div className="flex flex-col items-start sm:items-end gap-1 md:gap-2 text-[8px] md:text-[9px] font-black text-neutral-400 uppercase tracking-widest">
                   <span className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    Verified Dispatch
+                    Verified Report
                   </span>
                   <span>{formatFullDate(article.publishedAt)}</span>
                 </div>
@@ -177,12 +177,12 @@ export default function Article() {
               <div className="hidden xl:flex flex-col gap-6">
                 <div className="text-[10px] font-black uppercase tracking-widest text-[#003366] border-b border-neutral-100 pb-2">Editorial Context</div>
                 <p className="text-[11px] text-neutral-500 italic leading-relaxed">
-                  This dispatch has been reviewed by our international editorial board. We maintain strict objectivity standards 
-                  across all global technological and economic reports.
+                  This report has been reviewed by our international editorial board. We maintain strict objectivity standards 
+                  across all global technological and economic reporting.
                 </p>
                 <div className="p-4 bg-neutral-50 border border-neutral-100 rounded-sm">
                    <div className="text-[9px] font-black uppercase text-news-red mb-2 tracking-widest">Global Reach</div>
-                   <p className="text-[10px] text-neutral-600 leading-snug">Synced via high-frequency trade circuits and international news buffers.</p>
+                   <p className="text-[10px] text-neutral-600 leading-snug">Distributed via authenticated international networks.</p>
                 </div>
               </div>
             </aside>
@@ -193,7 +193,7 @@ export default function Article() {
 
           <div className="mt-20 pt-10 border-t-2 border-black flex flex-col items-center gap-6">
              <Link to="/" className="bg-[#003366] text-white px-10 py-3 text-xs font-black uppercase tracking-widest hover:bg-black transition-colors">
-               Return to Front Page dispatched
+               Return to Front Page
              </Link>
              <div className="h-px bg-neutral-100 w-full max-w-sm mt-4" />
              <p className="text-neutral-400 font-sans text-[10px] uppercase tracking-widest">

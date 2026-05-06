@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "NewsItem": {
+      "title": "News Item",
+      "description": "A rephrased news article from external sources.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The rephrased headline of the news."
+        },
+        "summary": {
+          "type": "string",
+          "description": "A rephrased summary of the news content."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the article image."
+        },
+        "originalUrl": {
+          "type": "string",
+          "description": "The URL of the original news source."
+        },
+        "source": {
+          "type": "string",
+          "description": "The name of the original source."
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the news was published."
+        },
+        "category": {
+          "type": "string",
+          "description": "News category (e.g., Tech, Sports, etc.)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["published", "draft"],
+          "description": "The publishing status of the article."
+        },
+        "views": {
+          "type": "integer",
+          "description": "Total number of views for this article."
+        },
+        "hash": {
+          "type": "string",
+          "description": "A unique hash to prevent duplicate news entries."
+        }
+      },
+      "required": ["title", "summary", "originalUrl", "publishedAt", "hash", "status"]
+    },
+    "Settings": {
+      "title": "System Settings",
+      "description": "Global application settings.",
+      "type": "object",
+      "properties": {
+        "autoMode": {
+          "type": "boolean",
+          "description": "Whether AI news is published automatically."
+        }
+      },
+      "required": ["autoMode"]
+    }
+  },
+  "firestore": {
+    "/news/{newsId}": {
+      "schema": "NewsItem",
+      "description": "Collection of processed news items."
+    },
+    "/settings/global": {
+      "schema": "Settings",
+      "description": "Global settings for the application."
+    }
+  }
+}

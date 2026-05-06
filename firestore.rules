@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'shrushtiacharya@gmail.com';
+    }
+
+    function isValidNewsItem(data) {
+      return data.keys().hasAll(['title', 'summary', 'originalUrl', 'publishedAt', 'hash', 'status']) &&
+             data.title is string && data.title.size() <= 600 &&
+             data.summary is string && data.summary.size() <= 20000 &&
+             data.originalUrl is string && data.originalUrl.size() <= 2000 &&
+             data.hash is string && data.hash.size() <= 256 &&
+             data.status in ['published', 'draft'];
+    }
+
+    match /news/{newsId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow list: if resource.data.status == 'published' || isAdmin();
+      allow create: if isAdmin() && isValidNewsItem(request.resource.data);
+      allow update: if (isAdmin() && isValidNewsItem(request.resource.data)) || 
+                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']));
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

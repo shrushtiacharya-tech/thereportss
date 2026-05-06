@@ -21,7 +21,7 @@ import { NewsItem } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { 
-  Image,
+  ImageIcon,
   Upload,
   X,
   Trash2, 

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { CATEGORIES } from '../data';
@@ -16,6 +17,15 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const { latestNews, trendingNews, loading: isContextLoading, error: contextError } = useNewsContext();
   
+  // SEO dynamic title and description
+  const pageTitle = selectedCategory === 'All' 
+    ? 'The Reports | Global Editorial Dispatch & Analytical News' 
+    : `${selectedCategory} News | The Reports Journal`;
+  
+  const pageDescription = selectedCategory === 'All'
+    ? 'Authoritative journalism for the modern age. Deep-dive reporting on politics, business, and technology.'
+    : `Latest ${selectedCategory} news and expert analysis from The Reports editorial board.`;
+
   // Use custom hook for category filtering, but fallback to context for "All"
   const { news: categoryNews, loading: isCategoryLoading, error: categoryError } = useNews(
     40, 
@@ -49,6 +59,20 @@ export default function Home() {
 
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={selectedCategory === 'All' ? "https://thereports.com" : `https://thereports.com/category/${selectedCategory.toLowerCase()}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content="https://thereports.com" />
+        
+        {/* Keywords */}
+        <meta name="keywords" content={`news, journalism, ${selectedCategory.toLowerCase()}, reports, analysis, politics, business, technology`} />
+      </Helmet>
+
       {/* Navigation & Search Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 md:mb-12 border-y border-black py-4 md:py-6">
         <div className="flex items-center gap-4 md:gap-6 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar touch-pan-x">

@@ -1,14 +1,32 @@
 import { useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { useNews } from '../hooks/useNews';
 
 export default function Category() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const { news: filteredArticles, loading } = useNews(20, categoryId?.charAt(0).toUpperCase() + categoryId!.slice(1));
+  const categoryName = categoryId ? categoryId.charAt(0).toUpperCase() + categoryId.slice(1) : '';
+  const { news: filteredArticles, loading } = useNews(20, categoryName);
+
+  const pageTitle = `${categoryName} News | The Reports Journal`;
+  const pageDescription = `The latest ${categoryName} news, deep-dive analysis, and editorial coverage from The Reports.`;
 
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={`https://thereports.com/category/${categoryId}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        
+        {/* Keywords */}
+        <meta name="keywords" content={`${categoryId}, news, reports, journalism, category, ${categoryName}`} />
+      </Helmet>
+
       <div className="border-b-4 border-ink pb-4 mb-12">
         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
           {categoryId}

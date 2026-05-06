@@ -1,15 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Search, Menu, User, X, Zap, TrendingUp } from 'lucide-react';
+import { Search, Menu, User, X, Zap, TrendingUp, LogOut, ShieldCheck } from 'lucide-react';
 import { CATEGORIES } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useNewsContext } from '../contexts/NewsContext';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [now, setNow] = useState(new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
+
+  const handleLogout = () => signOut(auth);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -48,9 +58,21 @@ export default function Header() {
           </div>
           <div className="flex gap-6 items-center uppercase tracking-wider text-neutral-600 font-bold">
             <Link to="/admin" className="text-news-blue hover:underline">Editorial Portal</Link>
-            <button className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center">
-              <User size={12} /> Sign In
-            </button>
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] text-neutral-400 font-mono lower-case">#{user.email?.split('@')[0]}</span>
+                <button 
+                  onClick={handleLogout}
+                  className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center"
+                >
+                  <LogOut size={12} /> Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link to="/admin" className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center">
+                <User size={12} /> Sign In
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ARTICLES } from '../data';
 import Sidebar from '../components/Sidebar';
 import { Share2, Bookmark, MessageSquare, ChevronLeft } from 'lucide-react';
@@ -22,6 +23,18 @@ export default function Article() {
     if (staticArticle || !articleId) return;
     
     const fetchDynamic = async () => {
+      // Check for global quota backoff
+      const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
+      const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
+      const isBackingOff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < 60 * 60 * 1000);
+
+      if (isBackingOff) {
+        // We can't fetch but maybe it's in a cache elsewhere? 
+        // For now just stop.
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const docRef = doc(db, "news", articleId);
@@ -39,8 +52,13 @@ export default function Article() {
             views: increment(1)
           }).catch(err => console.error("Error incrementing views:", err));
         }
-      } catch (err) {
-        console.error("Error fetching dynamic article:", err);
+      } catch (err: any) {
+        if (err.message?.includes("Quota")) {
+          localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
+          console.warn("Firestore Quota hit in Article. Backing off.");
+        } else {
+          console.error("Error fetching dynamic article:", err);
+        }
       } finally {
         setLoading(false);
       }
@@ -70,8 +88,50 @@ export default function Article() {
     );
   }
 
+  // Structured Data (JSON-LD) for Google News
+  const articleStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": article.title,
+    "description": article.summary,
+    "image": article.imageUrl ? [article.imageUrl] : [],
+    "datePublished": new Date(article.publishedAt || Date.now()).toISOString(),
+    "dateModified": new Date(article.publishedAt || Date.now()).toISOString(),
+    "author": [{
+      "@type": "Person",
+      "name": article.author || "The Reports Team",
+      "url": "https://thereports.com"
+    }]
+  };
+
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>{`${article.title} | The Reports`}</title>
+        <meta name="description" content={article.summary} />
+        <link rel="canonical" href={`https://thereports.com/article/${articleId}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={article.summary} />
+        {article.imageUrl && <meta property="og:image" content={article.imageUrl} />}
+        <meta property="og:url" content={`https://thereports.com/article/${articleId}`} />
+        
+        {/* Twitter */}
+        <meta name="twitter:title" content={article.title} />
+        <meta name="twitter:description" content={article.summary} />
+        {article.imageUrl && <meta name="twitter:image" content={article.imageUrl} />}
+        
+        {/* Keywords */}
+        <meta name="keywords" content={`${article.category.toLowerCase()}, ${article.title.toLowerCase().split(' ').join(', ')}, reports, news`} />
+        
+        {/* Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(articleStructuredData)}
+        </script>
+      </Helmet>
+
       <Link to="/" className="inline-flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-neutral-400 hover:text-ink transition-colors mb-8 group">
         <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
         Back to News

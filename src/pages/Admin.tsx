@@ -41,11 +41,14 @@ import {
 
 export default function Admin() {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -69,6 +72,7 @@ export default function Admin() {
 
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      setAuthLoading(false);
       if (u) {
         // Clear previous if any (though auth should only fire once for login/logout usually)
         if (cleanup) cleanup();
@@ -89,6 +93,18 @@ export default function Admin() {
   }, []);
 
   const setupListeners = () => {
+    // Check for global quota backoff
+    const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
+    const QUOTA_BACKOFF_DURATION = 60 * 60 * 1000; // 1 hour
+    const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
+    const hasBackoff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < QUOTA_BACKOFF_DURATION);
+
+    if (hasBackoff) {
+      setLoading(false);
+      setError("Database Quota Reached. Operating in limited mode.");
+      return () => {};
+    }
+
     setLoading(true);
     
     // Listen for news updates
@@ -122,10 +138,22 @@ export default function Admin() {
       });
       
       setLoading(false);
-    }, (err) => {
-      console.error("News snapshot error:", err);
-      setError("Database Quota Reached or Network Issue");
-      handleFirestoreError(err, OperationType.LIST, 'news');
+    }, (err: any) => {
+      setLoading(false);
+      
+      if (err.message?.includes("Quota")) {
+        localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
+        setError("Database Quota Reached. Please try again later.");
+        console.warn("Firestore Quota hit in Admin. Backing off.");
+      } else {
+        console.error("News snapshot error:", err);
+        setError("Synchronization issue. Please check your connection.");
+        try {
+          handleFirestoreError(err, OperationType.LIST, 'news');
+        } catch (e) {
+          // Error already handled
+        }
+      }
     });
 
     return () => {
@@ -134,11 +162,23 @@ export default function Admin() {
   };
 
   const login = async () => {
+    setLoginError(null);
+    setIsLoggingIn(true);
     try {
       const provider = new GoogleAuthProvider();
+      // Ensure we use popup and catch errors properly
       await signInWithPopup(auth, provider);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login failed:", err);
+      if (err.code === 'auth/popup-blocked') {
+        setLoginError("Popup was blocked by your browser. Please allow popups for this site.");
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setLoginError("Login window was closed before completion.");
+      } else {
+        setLoginError("Failed to sign in. Please try again or check your connection.");
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -299,10 +339,19 @@ export default function Admin() {
     return matchesSearch && matchesCategory;
   });
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
-        <div className="flex flex-col items-center gap-8 max-w-md w-full px-6">
+        <Loader2 className="animate-spin text-neutral-200" size={60} />
+        <p className="mt-4 text-xs font-mono uppercase tracking-widest text-neutral-400">Authenticating...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 px-6">
+        <div className="flex flex-col items-center gap-8 max-w-md w-full">
           <div className="p-6 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-full">
             <ShieldCheck size={64} className="text-neutral-300" />
           </div>
@@ -312,13 +361,27 @@ export default function Admin() {
               Restricted access area. Please identify yourself to access "The Reports" editorial systems.
             </p>
           </div>
-          <button 
-            onClick={login}
-            className="flex items-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl"
-          >
-            <LogIn size={18} />
-            Identify with Google
-          </button>
+          
+          <div className="w-full flex flex-col gap-4">
+            <button 
+              onClick={login}
+              disabled={isLoggingIn}
+              className="w-full flex items-center justify-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoggingIn ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
+              {isLoggingIn ? "Authenticating..." : "Identify with Google"}
+            </button>
+            
+            {loginError && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-news-red/10 border border-news-red/20 text-news-red text-[10px] font-bold uppercase tracking-widest text-center rounded-sm"
+              >
+                {loginError}
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
     );

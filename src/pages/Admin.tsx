@@ -174,8 +174,12 @@ export default function Admin() {
         setLoginError("Popup was blocked by your browser. Please allow popups for this site.");
       } else if (err.code === 'auth/popup-closed-by-user') {
         setLoginError("Login window was closed before completion.");
+      } else if (err.code === 'auth/unauthorised-domain') {
+        setLoginError("This domain is not authorised for Firebase Auth. Please check your Firebase console.");
+      } else if (err.code === 'auth/network-request-failed') {
+        setLoginError("Network connection lost. Please check your internet and try again.");
       } else {
-        setLoginError("Failed to sign in. Please try again or check your connection.");
+        setLoginError(`Sign-in failed: ${err.message || "Unknown error"}. Try opening the app in a new tab if this persists.`);
       }
     } finally {
       setIsLoggingIn(false);
@@ -381,6 +385,10 @@ export default function Admin() {
                 {loginError}
               </motion.div>
             )}
+            
+            <p className="text-[9px] text-neutral-400 text-center uppercase tracking-widest leading-relaxed">
+              * If sign-in fails repeatedly, try opening this application in a <span className="font-black text-neutral-600">New Tab</span> to bypass browser iframe restrictions.
+            </p>
           </div>
         </div>
       </div>

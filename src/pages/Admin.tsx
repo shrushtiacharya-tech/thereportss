@@ -174,8 +174,9 @@ export default function Admin() {
         setLoginError("Popup was blocked by your browser. Please allow popups for this site.");
       } else if (err.code === 'auth/popup-closed-by-user') {
         setLoginError("Login window was closed before completion.");
-      } else if (err.code === 'auth/unauthorised-domain') {
-        setLoginError("This domain is not authorised for Firebase Auth. Please check your Firebase console.");
+      } else if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        setLoginError(`Domain Unauthorized: Please add "${currentDomain}" to your Firebase Console > Authentication > Settings > Authorized domains.`);
       } else if (err.code === 'auth/network-request-failed') {
         setLoginError("Network connection lost. Please check your internet and try again.");
       } else {

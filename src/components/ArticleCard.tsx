@@ -17,7 +17,7 @@ export default function ArticleCard({ article, variant = 'grid' }: ArticleCardPr
 
   if (variant === 'hero') {
     return (
-      <article 
+      <div 
         onClick={handleClick}
         className="group cursor-pointer active:scale-[0.98] transition-transform duration-200 border-b-2 border-black pb-8 md:pb-12"
       >
@@ -48,13 +48,13 @@ export default function ArticleCard({ article, variant = 'grid' }: ArticleCardPr
             </div>
           </div>
         </div>
-      </article>
+      </div>
     );
   }
 
   if (variant === 'sidebar') {
     return (
-      <article 
+      <div 
         onClick={handleClick}
         className="group cursor-pointer py-4 border-b border-border-news last:border-0 active:translate-x-1 transition-transform"
       >
@@ -69,12 +69,12 @@ export default function ArticleCard({ article, variant = 'grid' }: ArticleCardPr
             </div>
           </div>
         </div>
-      </article>
+      </div>
     );
   }
 
   return (
-    <article 
+    <div 
       onClick={handleClick}
       className="group cursor-pointer py-6 md:py-8 flex flex-col gap-4 border-b border-neutral-100 last:border-0 h-full hover:bg-neutral-50/50 transition-colors px-1 sm:px-2 active:bg-neutral-100"
     >
@@ -103,6 +103,6 @@ export default function ArticleCard({ article, variant = 'grid' }: ArticleCardPr
         <span className="w-px h-[8px] bg-neutral-300 hidden sm:inline" />
         <span className="whitespace-nowrap">{article.publishedAt}</span>
       </div>
-    </article>
+    </div>
   );
 }

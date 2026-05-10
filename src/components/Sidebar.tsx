@@ -84,7 +84,7 @@ export default function Sidebar({ showHeader = true }: SidebarProps) {
         )}
         <div className="flex flex-col">
           {trending.map((article, idx) => (
-            <article 
+            <div 
               key={article.id} 
               className="group flex gap-4 py-5 border-b border-neutral-100 last:border-0 cursor-pointer"
               onClick={() => {
@@ -101,7 +101,7 @@ export default function Sidebar({ showHeader = true }: SidebarProps) {
                   {article.title}
                 </h3>
               </div>
-            </article>
+            </div>
           ))}
         </div>
       </section>

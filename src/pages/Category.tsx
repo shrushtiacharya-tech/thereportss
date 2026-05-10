@@ -1,32 +1,14 @@
 import { useParams } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { useNews } from '../hooks/useNews';
 
 export default function Category() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const categoryName = categoryId ? categoryId.charAt(0).toUpperCase() + categoryId.slice(1) : '';
-  const { news: filteredArticles, loading } = useNews(20, categoryName);
-
-  const pageTitle = `${categoryName} News | The Reports Journal`;
-  const pageDescription = `The latest ${categoryName} news, deep-dive analysis, and editorial coverage from The Reports.`;
+  const { news: filteredArticles, loading } = useNews(20, categoryId?.charAt(0).toUpperCase() + categoryId!.slice(1));
 
   return (
     <div className="news-container pt-8">
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <link rel="canonical" href={`https://thereports.com/category/${categoryId}`} />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDescription} />
-        
-        {/* Keywords */}
-        <meta name="keywords" content={`${categoryId}, news, reports, journalism, category, ${categoryName}`} />
-      </Helmet>
-
       <div className="border-b-4 border-ink pb-4 mb-12">
         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
           {categoryId}
@@ -41,6 +23,7 @@ export default function Category() {
           {loading ? (
             <div className="py-20 text-center flex flex-col items-center gap-4">
                <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin" />
+               <p className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest">Retrieved Dispatch Records...</p>
             </div>
           ) : filteredArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">

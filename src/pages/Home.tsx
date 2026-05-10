@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { CATEGORIES } from '../data';
@@ -17,15 +16,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const { latestNews, trendingNews, loading: isContextLoading, error: contextError } = useNewsContext();
   
-  // SEO dynamic title and description
-  const pageTitle = selectedCategory === 'All' 
-    ? 'The Reports | Global Editorial Dispatch & Analytical News' 
-    : `${selectedCategory} News | The Reports Journal`;
-  
-  const pageDescription = selectedCategory === 'All'
-    ? 'Authoritative journalism for the modern age. Deep-dive reporting on politics, business, and technology.'
-    : `Latest ${selectedCategory} news and expert analysis from The Reports editorial board.`;
-
   // Use custom hook for category filtering, but fallback to context for "All"
   const { news: categoryNews, loading: isCategoryLoading, error: categoryError } = useNews(
     40, 
@@ -59,22 +49,24 @@ export default function Home() {
 
   return (
     <div className="news-container pt-8">
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <link rel="canonical" href={selectedCategory === 'All' ? "https://thereports.com" : `https://thereports.com/category/${selectedCategory.toLowerCase()}`} />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDescription} />
-        <meta property="og:url" content="https://thereports.com" />
-        
-        {/* Keywords */}
-        <meta name="keywords" content={`news, journalism, ${selectedCategory.toLowerCase()}, reports, analysis, politics, business, technology`} />
-      </Helmet>
-
       {/* Navigation & Search Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 md:mb-12 border-y border-black py-4 md:py-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 md:mb-12 border-y border-black py-4 md:py-6 relative">
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute -top-12 left-0 right-0 bg-neutral-900 border border-neutral-800 p-2 text-center rounded-sm z-40"
+            >
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Status: ARCHIVE_MODE</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-news-red animate-pulse" />
+                <span className="text-[9px] font-medium text-neutral-400 capitalize">{error.toLowerCase()}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex items-center gap-4 md:gap-6 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar touch-pan-x">
           <button 
             onClick={() => setSelectedCategory('All')}
@@ -124,10 +116,11 @@ export default function Home() {
       {isLoading ? (
         <div className="py-20 text-center flex flex-col items-center gap-4">
            <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin" />
+           <p className="text-[10px] font-mono text-neutral-400 uppercase tracking-[0.5em]">Synchronizing Feed...</p>
         </div>
       ) : filteredNews.length === 0 ? (
         <div className="py-40 text-center">
-           <h3 className="text-2xl font-serif font-black mb-4">No Articles Found</h3>
+           <h3 className="text-2xl font-serif font-black mb-4">No Dispatches Found</h3>
            <p className="text-neutral-500 font-mono text-xs uppercase tracking-widest">Adjust your filters or query to refine search</p>
         </div>
       ) : (

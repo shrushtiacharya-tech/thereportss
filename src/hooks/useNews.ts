@@ -6,8 +6,7 @@ import { NewsItem } from '../types';
 import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 
 const newsCache: Record<string, { data: NewsItem[], timestamp: number }> = {};
-const CATEGORY_CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
-const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
+const CATEGORY_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
 export function useNews(count: number = 10, category?: string, sortBy: 'latest' | 'trending' = 'latest') {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -19,25 +18,16 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
     const fetchNews = async () => {
       const cacheKey = `${category || 'All'}_${sortBy}_${count}`;
       
-      // Check for global quota backoff
-      const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
-      const isBackingOff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < 60 * 60 * 1000);
-
       // Check memory cache
-      if (newsCache[cacheKey] && (Date.now() - newsCache[cacheKey].timestamp < CATEGORY_CACHE_EXPIRY || isBackingOff)) {
+      if (newsCache[cacheKey] && (Date.now() - newsCache[cacheKey].timestamp < CATEGORY_CACHE_EXPIRY)) {
         setNews(newsCache[cacheKey].data);
-        setLoading(false);
-        return;
-      }
-
-      if (isBackingOff) {
         setLoading(false);
         return;
       }
 
       setLoading(true);
       const sortField = sortBy === 'latest' ? 'publishedAt' : 'views';
-
+      
       try {
         let q;
         if (category && category !== 'All') {
@@ -75,20 +65,14 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
           setNews(items);
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err) {
         if (isMounted) {
-          // If we have ANY cached data, even stale, use it as fallback
+          // Fallback to memory cache if hit quota or network error
           if (newsCache[cacheKey]) {
             setNews(newsCache[cacheKey].data);
           } else {
-            setError('Service temporarily unavailable.');
-          }
-
-          if (err.message?.includes("Quota")) {
-            localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
-            console.warn("Firestore Quota hit in hook. Backing off.");
-          } else {
             handleFirestoreError(err, OperationType.LIST, 'news');
+            setError('Failed to fetch news');
           }
           setLoading(false);
         }

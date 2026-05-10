@@ -1,25 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Search, Menu, User, X, Zap, TrendingUp, LogOut, ShieldCheck } from 'lucide-react';
+import { Search, Menu, User, X, Zap, TrendingUp } from 'lucide-react';
 import { CATEGORIES } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useNewsContext } from '../contexts/NewsContext';
-import { auth } from '../lib/firebase';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [now, setNow] = useState(new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub();
-  }, []);
-
-  const handleLogout = () => signOut(auth);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -58,21 +48,9 @@ export default function Header() {
           </div>
           <div className="flex gap-6 items-center uppercase tracking-wider text-neutral-600 font-bold">
             <Link to="/admin" className="text-news-blue hover:underline">Editorial Portal</Link>
-            {user ? (
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] text-neutral-400 font-mono lower-case">#{user.email?.split('@')[0]}</span>
-                <button 
-                  onClick={handleLogout}
-                  className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center"
-                >
-                  <LogOut size={12} /> Sign Out
-                </button>
-              </div>
-            ) : (
-              <Link to="/admin" className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center">
-                <User size={12} /> Sign In
-              </Link>
-            )}
+            <button className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center">
+              <User size={12} /> Sign In
+            </button>
           </div>
         </div>
       </div>
@@ -121,6 +99,7 @@ export default function Header() {
           </ul>
 
           <div className="flex-grow md:hidden px-4 flex items-center gap-2">
+             <span className="text-[10px] font-black uppercase tracking-widest text-[#003366] whitespace-nowrap">Global News Buffer</span>
              <div className="h-px w-full bg-neutral-100" />
           </div>
 
@@ -134,6 +113,19 @@ export default function Header() {
           </div>
         </div>
       </nav>
+
+      {/* Breaking News Ticker */}
+      <div className="bg-black text-white overflow-hidden py-1.5 md:py-2 border-b border-black">
+        <div className="news-container flex items-center gap-4">
+          <div className="flex items-center gap-2 whitespace-nowrap border-r border-white/20 pr-4">
+            <div className="w-1.5 h-1.5 bg-news-red rounded-full animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Live Updates</span>
+          </div>
+          <div className="relative flex-grow h-4 overflow-hidden">
+             <TickerContent />
+          </div>
+        </div>
+      </div>
 
       {/* Mobile Drawer */}
       <AnimatePresence>
@@ -154,7 +146,7 @@ export default function Header() {
               className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-paper z-[101] shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b-4 border-black flex justify-between items-center bg-[#003366] text-white">
-                <span className="text-xs font-black uppercase tracking-[0.3em]">Navigation</span>
+                <span className="text-xs font-black uppercase tracking-[0.3em]">Dispatch Center</span>
                 <button onClick={() => setMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>
@@ -195,7 +187,7 @@ export default function Header() {
                     {today}
                  </p>
                  <p className="text-[9px] text-neutral-400 uppercase font-bold tracking-tighter">
-                   Authenticated Journal of Record // v2.0
+                   Authenticated Journal of Record // v2.0 Dispatch
                  </p>
               </div>
             </motion.div>
@@ -203,5 +195,34 @@ export default function Header() {
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+function TickerContent() {
+  const { latestNews, loading } = useNewsContext();
+  const news = latestNews.slice(0, 5);
+  
+  if (loading || !news || news.length === 0) return <div className="text-[10px] font-mono uppercase tracking-widest opacity-50">Syncing with global dispatch...</div>;
+
+  return (
+    <motion.div 
+      initial={{ y: 20 }}
+      animate={{ y: 0 }}
+      className="flex gap-10 whitespace-nowrap"
+    >
+      <div className="flex gap-10 animate-marquee">
+        {news.map((item: any, i: number) => (
+          <Link 
+            key={item.id + i} 
+            to={`/article/${item.id}`}
+            className="text-[10px] font-bold uppercase tracking-widest hover:text-news-red transition-colors"
+          >
+            <span className="text-news-red mr-2 font-black">•</span>
+            {item.title}
+          </Link>
+        ))}
+      </div>
+      {/* Duplicate for seamless loop if needed, but for now simple marquee is fine */}
+    </motion.div>
   );
 }

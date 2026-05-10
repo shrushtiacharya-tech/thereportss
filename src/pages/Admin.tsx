@@ -15,13 +15,12 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../lib/firebase';
 import { NewsItem } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { 
-  ImageIcon,
+  Image,
   Upload,
   X,
   Trash2, 
@@ -41,14 +40,10 @@ import {
 
 export default function Admin() {
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -72,7 +67,6 @@ export default function Admin() {
 
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setAuthLoading(false);
       if (u) {
         // Clear previous if any (though auth should only fire once for login/logout usually)
         if (cleanup) cleanup();
@@ -93,18 +87,6 @@ export default function Admin() {
   }, []);
 
   const setupListeners = () => {
-    // Check for global quota backoff
-    const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
-    const QUOTA_BACKOFF_DURATION = 60 * 60 * 1000; // 1 hour
-    const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
-    const hasBackoff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < QUOTA_BACKOFF_DURATION);
-
-    if (hasBackoff) {
-      setLoading(false);
-      setError("Database Quota Reached. Operating in limited mode.");
-      return () => {};
-    }
-
     setLoading(true);
     
     // Listen for news updates
@@ -116,7 +98,6 @@ export default function Admin() {
     const unsubNews = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NewsItem));
       setNews(items);
-      setError(null);
       
       // Calculate Analytics
       const totalViews = items.reduce((acc, item) => acc + (item.views || 0), 0);
@@ -138,22 +119,8 @@ export default function Admin() {
       });
       
       setLoading(false);
-    }, (err: any) => {
-      setLoading(false);
-      
-      if (err.message?.includes("Quota")) {
-        localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
-        setError("Database Quota Reached. Please try again later.");
-        console.warn("Firestore Quota hit in Admin. Backing off.");
-      } else {
-        console.error("News snapshot error:", err);
-        setError("Synchronization issue. Please check your connection.");
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'news');
-        } catch (e) {
-          // Error already handled
-        }
-      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, 'news');
     });
 
     return () => {
@@ -162,28 +129,11 @@ export default function Admin() {
   };
 
   const login = async () => {
-    setLoginError(null);
-    setIsLoggingIn(true);
     try {
       const provider = new GoogleAuthProvider();
-      // Ensure we use popup and catch errors properly
       await signInWithPopup(auth, provider);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login failed:", err);
-      if (err.code === 'auth/popup-blocked') {
-        setLoginError("Popup was blocked by your browser. Please allow popups for this site.");
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setLoginError("Login window was closed before completion.");
-      } else if (err.code === 'auth/unauthorized-domain') {
-        const currentDomain = window.location.hostname;
-        setLoginError(`Domain Unauthorized: Please add "${currentDomain}" to your Firebase Console > Authentication > Settings > Authorized domains.`);
-      } else if (err.code === 'auth/network-request-failed') {
-        setLoginError("Network connection lost. Please check your internet and try again.");
-      } else {
-        setLoginError(`Sign-in failed: ${err.message || "Unknown error"}. Try opening the app in a new tab if this persists.`);
-      }
-    } finally {
-      setIsLoggingIn(false);
     }
   };
 
@@ -344,19 +294,10 @@ export default function Admin() {
     return matchesSearch && matchesCategory;
   });
 
-  if (authLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-40">
-        <Loader2 className="animate-spin text-neutral-200" size={60} />
-        <p className="mt-4 text-xs font-mono uppercase tracking-widest text-neutral-400">Authenticating...</p>
-      </div>
-    );
-  }
-
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center py-40 px-6">
-        <div className="flex flex-col items-center gap-8 max-w-md w-full">
+      <div className="flex flex-col items-center justify-center py-40">
+        <div className="flex flex-col items-center gap-8 max-w-md w-full px-6">
           <div className="p-6 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-full">
             <ShieldCheck size={64} className="text-neutral-300" />
           </div>
@@ -366,31 +307,13 @@ export default function Admin() {
               Restricted access area. Please identify yourself to access "The Reports" editorial systems.
             </p>
           </div>
-          
-          <div className="w-full flex flex-col gap-4">
-            <button 
-              onClick={login}
-              disabled={isLoggingIn}
-              className="w-full flex items-center justify-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoggingIn ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
-              {isLoggingIn ? "Authenticating..." : "Identify with Google"}
-            </button>
-            
-            {loginError && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-news-red/10 border border-news-red/20 text-news-red text-[10px] font-bold uppercase tracking-widest text-center rounded-sm"
-              >
-                {loginError}
-              </motion.div>
-            )}
-            
-            <p className="text-[9px] text-neutral-400 text-center uppercase tracking-widest leading-relaxed">
-              * If sign-in fails repeatedly, try opening this application in a <span className="font-black text-neutral-600">New Tab</span> to bypass browser iframe restrictions.
-            </p>
-          </div>
+          <button 
+            onClick={login}
+            className="flex items-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl"
+          >
+            <LogIn size={18} />
+            Identify with Google
+          </button>
         </div>
       </div>
     );
@@ -474,7 +397,7 @@ export default function Admin() {
                   <label className="label-caps mb-2 block">Headline of Professional Record</label>
                   <input 
                     required
-                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-base md:text-lg font-serif focus:outline-none focus:border-news-red transition-all"
+                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-lg font-serif focus:outline-none focus:border-news-red transition-all"
                     value={formData.title}
                     onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter analytical title..."
@@ -484,7 +407,7 @@ export default function Admin() {
                 <div>
                   <label className="label-caps mb-2 block">Vertical</label>
                   <select 
-                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-[16px] md:text-xs font-black uppercase tracking-widest focus:outline-none focus:border-news-red appearance-none"
+                    className="w-full bg-neutral-50 border-b-2 border-neutral-200 px-4 py-3 text-xs font-black uppercase tracking-widest focus:outline-none focus:border-news-red appearance-none"
                     value={formData.category}
                     onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   >
@@ -514,20 +437,17 @@ export default function Admin() {
                       </button>
                     </div>
                   ) : (
-                    <label className="w-full aspect-[4/3] md:aspect-[21/9] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-100 hover:border-news-blue transition-all group p-8">
+                    <label className="w-full aspect-[21/9] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-100 hover:border-news-blue transition-all group">
                       <input 
                         type="file" 
                         accept="image/*" 
                         onChange={handleImageUpload}
                         className="hidden" 
                       />
-                      <div className="p-6 rounded-full bg-white shadow-sm border border-neutral-100 group-hover:scale-110 transition-transform">
-                        <Upload size={32} className="text-[#003366]" />
+                      <div className="p-4 rounded-full bg-white shadow-sm border border-neutral-100 group-hover:scale-110 transition-transform">
+                        <Upload size={24} className="text-neutral-400 group-hover:text-news-blue" />
                       </div>
-                      <div className="text-center">
-                        <span className="text-[12px] font-black uppercase tracking-widest text-[#003366] block mb-1">Add Editorial Photo</span>
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Mobile Camera or Gallery (Max 2MB)</span>
-                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Transmit Visual Signal (Max 2MB)</span>
                     </label>
                   )}
                 </div>
@@ -537,7 +457,7 @@ export default function Admin() {
                 <label className="label-caps mb-2 block">Report Teaser (Summary)</label>
                 <textarea 
                   required
-                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-4 text-[16px] md:text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[100px] transition-all"
+                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-4 text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[100px] transition-all"
                   value={formData.summary}
                   onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
                   placeholder="One or two sentence teaser..."
@@ -548,7 +468,7 @@ export default function Admin() {
                 <label className="label-caps mb-2 block">Analytical Context & Dispatch Body</label>
                 <textarea 
                   required
-                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-6 text-[16px] md:text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[350px] transition-all"
+                  className="w-full bg-neutral-50 border-2 border-neutral-100 p-6 text-base font-serif leading-relaxed focus:outline-none focus:border-[#003366] min-h-[350px] transition-all"
                   value={formData.body}
                   onChange={e => setFormData(prev => ({ ...prev, body: e.target.value }))}
                   placeholder="Drafting the detailed editorial summary (400-600 words)..."
@@ -597,7 +517,7 @@ export default function Admin() {
                   )}
                   <button 
                     disabled={isSubmitting}
-                    className="w-full md:w-auto bg-black text-white px-12 py-5 text-xs font-black uppercase tracking-[0.3em] hover:bg-news-red transition-all shadow-xl disabled:opacity-50"
+                    className="bg-black text-white px-12 py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-news-red transition-all shadow-xl disabled:opacity-50"
                   >
                     {isSubmitting ? "Processing..." : "Commit Dispatch"}
                   </button>

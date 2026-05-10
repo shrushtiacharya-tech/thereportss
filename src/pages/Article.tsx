@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { ARTICLES } from '../data';
 import Sidebar from '../components/Sidebar';
 import { Share2, Bookmark, MessageSquare, ChevronLeft } from 'lucide-react';
@@ -23,18 +22,6 @@ export default function Article() {
     if (staticArticle || !articleId) return;
     
     const fetchDynamic = async () => {
-      // Check for global quota backoff
-      const QUOTA_BACKOFF_KEY = 'thereports_quota_backoff';
-      const lastQuotaError = localStorage.getItem(QUOTA_BACKOFF_KEY);
-      const isBackingOff = lastQuotaError && (Date.now() - parseInt(lastQuotaError) < 60 * 60 * 1000);
-
-      if (isBackingOff) {
-        // We can't fetch but maybe it's in a cache elsewhere? 
-        // For now just stop.
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
         const docRef = doc(db, "news", articleId);
@@ -52,13 +39,8 @@ export default function Article() {
             views: increment(1)
           }).catch(err => console.error("Error incrementing views:", err));
         }
-      } catch (err: any) {
-        if (err.message?.includes("Quota")) {
-          localStorage.setItem(QUOTA_BACKOFF_KEY, Date.now().toString());
-          console.warn("Firestore Quota hit in Article. Backing off.");
-        } else {
-          console.error("Error fetching dynamic article:", err);
-        }
+      } catch (err) {
+        console.error("Error fetching dynamic article:", err);
       } finally {
         setLoading(false);
       }
@@ -71,8 +53,9 @@ export default function Article() {
 
   if (loading) {
     return (
-      <div className="news-container py-40 text-center flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin mb-4" />
+      <div className="news-container py-20 text-center">
+        <div className="w-12 h-12 border-4 border-neutral-100 border-t-black rounded-full animate-spin mx-auto mb-4" />
+        <h2 className="text-xl font-serif text-neutral-400 uppercase tracking-widest">Retrieving Dispatch...</h2>
       </div>
     );
   }
@@ -80,7 +63,7 @@ export default function Article() {
   if (!article) {
     return (
       <div className="news-container py-20 text-center">
-        <h2 className="text-3xl font-serif font-black mb-4">Article Not Found</h2>
+        <h2 className="text-3xl font-serif font-black mb-4">Dispatch Not Found</h2>
         <Link to="/" className="text-[#003366] font-bold uppercase tracking-widest hover:underline">
           Return to Front Page
         </Link>
@@ -88,50 +71,8 @@ export default function Article() {
     );
   }
 
-  // Structured Data (JSON-LD) for Google News
-  const articleStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    "headline": article.title,
-    "description": article.summary,
-    "image": article.imageUrl ? [article.imageUrl] : [],
-    "datePublished": new Date(article.publishedAt || Date.now()).toISOString(),
-    "dateModified": new Date(article.publishedAt || Date.now()).toISOString(),
-    "author": [{
-      "@type": "Person",
-      "name": article.author || "The Reports Team",
-      "url": "https://thereports.com"
-    }]
-  };
-
   return (
     <div className="news-container pt-8">
-      <Helmet>
-        <title>{`${article.title} | The Reports`}</title>
-        <meta name="description" content={article.summary} />
-        <link rel="canonical" href={`https://thereports.com/article/${articleId}`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="article" />
-        <meta property="og:title" content={article.title} />
-        <meta property="og:description" content={article.summary} />
-        {article.imageUrl && <meta property="og:image" content={article.imageUrl} />}
-        <meta property="og:url" content={`https://thereports.com/article/${articleId}`} />
-        
-        {/* Twitter */}
-        <meta name="twitter:title" content={article.title} />
-        <meta name="twitter:description" content={article.summary} />
-        {article.imageUrl && <meta name="twitter:image" content={article.imageUrl} />}
-        
-        {/* Keywords */}
-        <meta name="keywords" content={`${article.category.toLowerCase()}, ${article.title.toLowerCase().split(' ').join(', ')}, reports, news`} />
-        
-        {/* Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify(articleStructuredData)}
-        </script>
-      </Helmet>
-
       <Link to="/" className="inline-flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-neutral-400 hover:text-ink transition-colors mb-8 group">
         <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
         Back to News
@@ -142,7 +83,7 @@ export default function Article() {
           {/* Article Header: Full Width */}
           <header className="flex flex-col gap-6 mb-12">
             <div className="text-[9px] font-black uppercase tracking-[0.4em] text-news-red mb-2">
-              {article.category} // editorial report
+              {article.category} // dispatch report
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-black leading-[1.1] text-ink mb-2 tracking-tight">
               {article.title}
@@ -161,7 +102,7 @@ export default function Article() {
                   />
                 </div>
                 <figcaption className="mt-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 border-l border-neutral-200 pl-4 py-1">
-                  Editorial Record // Source Reference TR-SIGNAL
+                  Dispatch Attachment // Reference Archive Entry TR-SIGNAL
                 </figcaption>
               </figure>
             )}
@@ -187,7 +128,7 @@ export default function Article() {
                 <div className="flex flex-col items-start sm:items-end gap-1 md:gap-2 text-[8px] md:text-[9px] font-black text-neutral-400 uppercase tracking-widest">
                   <span className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    Verified Report
+                    Verified Dispatch
                   </span>
                   <span>{formatFullDate(article.publishedAt)}</span>
                 </div>
@@ -237,12 +178,12 @@ export default function Article() {
               <div className="hidden xl:flex flex-col gap-6">
                 <div className="text-[10px] font-black uppercase tracking-widest text-[#003366] border-b border-neutral-100 pb-2">Editorial Context</div>
                 <p className="text-[11px] text-neutral-500 italic leading-relaxed">
-                  This report has been reviewed by our international editorial board. We maintain strict objectivity standards 
-                  across all global technological and economic reporting.
+                  This dispatch has been reviewed by our international editorial board. We maintain strict objectivity standards 
+                  across all global technological and economic reports.
                 </p>
                 <div className="p-4 bg-neutral-50 border border-neutral-100 rounded-sm">
                    <div className="text-[9px] font-black uppercase text-news-red mb-2 tracking-widest">Global Reach</div>
-                   <p className="text-[10px] text-neutral-600 leading-snug">Distributed via authenticated international networks.</p>
+                   <p className="text-[10px] text-neutral-600 leading-snug">Synced via high-frequency trade circuits and international news buffers.</p>
                 </div>
               </div>
             </aside>
@@ -253,7 +194,7 @@ export default function Article() {
 
           <div className="mt-20 pt-10 border-t-2 border-black flex flex-col items-center gap-6">
              <Link to="/" className="bg-[#003366] text-white px-10 py-3 text-xs font-black uppercase tracking-widest hover:bg-black transition-colors">
-               Return to Front Page
+               Return to Front Page dispatched
              </Link>
              <div className="h-px bg-neutral-100 w-full max-w-sm mt-4" />
              <p className="text-neutral-400 font-sans text-[10px] uppercase tracking-widest">

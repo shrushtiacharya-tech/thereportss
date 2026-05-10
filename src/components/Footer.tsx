@@ -8,19 +8,20 @@ export default function Footer() {
     { name: 'Business', path: '/category/business' },
     { name: 'Technology', path: '/category/technology' },
     { name: 'Opinion', path: '/category/opinion' },
+    { name: 'Sports', path: '/category/sports' },
   ];
 
   const companyLinks = [
-    { name: 'About Us', path: '#' },
-    { name: 'Contact', path: '#' },
-    { name: 'Archive', path: '#' },
+    { name: 'About Us', path: '/about' },
+    { name: 'Contact', path: 'mailto:contact@thereports.in' },
+    { name: 'Archive', path: '/archive' },
     { name: 'Editorial Dashboard', path: '/admin' },
   ];
 
   const legalLinks = [
-    { name: 'Terms of Use', path: '#' },
-    { name: 'Privacy Policy', path: '#' },
-    { name: 'Cookie Policy', path: '#' },
+    { name: 'Terms of Use', path: '/terms' },
+    { name: 'Privacy Policy', path: '/privacy' },
+    { name: 'Cookie Policy', path: '/cookies' },
   ];
 
   return (
@@ -36,13 +37,13 @@ export default function Footer() {
               Delivered daily from our bureaus in Mumbai and New Delhi to a global audience.
             </p>
             <div className="flex gap-3">
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
                 <Twitter size={16} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
                 <Instagram size={16} />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
                 <Linkedin size={16} />
               </a>
               <a href="mailto:contact@thereports.in" className="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center hover:bg-[#003366] hover:text-white hover:border-[#003366] transition-all cursor-pointer text-neutral-400">
@@ -57,7 +58,7 @@ export default function Footer() {
               <ul className="flex flex-col gap-3">
                 {newsSections.map(link => (
                   <li key={link.name}>
-                    <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-news-blue transition-colors text-neutral-500">
+                    <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-[#003366] transition-colors text-neutral-500">
                       {link.name}
                     </Link>
                   </li>
@@ -70,9 +71,15 @@ export default function Footer() {
               <ul className="flex flex-col gap-3">
                 {companyLinks.map(link => (
                   <li key={link.name}>
-                    <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-news-blue transition-colors text-neutral-500">
-                      {link.name}
-                    </Link>
+                    {link.path.startsWith('mailto:') ? (
+                      <a href={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-[#003366] transition-colors text-neutral-500">
+                        {link.name}
+                      </a>
+                    ) : (
+                      <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-[#003366] transition-colors text-neutral-500">
+                        {link.name}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -83,7 +90,7 @@ export default function Footer() {
               <ul className="flex flex-col gap-3">
                 {legalLinks.map(link => (
                   <li key={link.name}>
-                    <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-news-blue transition-colors text-neutral-500">
+                    <Link to={link.path} className="text-xs font-bold uppercase tracking-wider hover:text-[#003366] transition-colors text-neutral-500">
                       {link.name}
                     </Link>
                   </li>

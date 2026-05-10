@@ -47,10 +47,9 @@ export default function Header() {
             <span className="hidden sm:inline">Mumbai/New Delhi Edition</span>
           </div>
           <div className="flex gap-6 items-center uppercase tracking-wider text-neutral-600 font-bold">
-            <Link to="/admin" className="text-news-blue hover:underline">Editorial Portal</Link>
-            <button className="hover:text-news-red transition-colors cursor-pointer flex gap-1 items-center">
-              <User size={12} /> Sign In
-            </button>
+            <Link to="/admin" className="text-neutral-500 hover:text-[#003366] transition-colors flex gap-1 items-center">
+              <User size={12} /> Editorial Portal
+            </Link>
           </div>
         </div>
       </div>

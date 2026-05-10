@@ -40,8 +40,12 @@ export default function Article() {
             views: increment(1)
           }).catch(err => console.error("Error incrementing views:", err));
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching dynamic article:", err);
+        const isQuotaError = err.message?.includes("Quota") || err.message?.includes("quota");
+        if (isQuotaError) {
+          // You could set an error state here if you wanted a specific UI
+        }
       } finally {
         setLoading(false);
       }

@@ -86,7 +86,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error("News fetch error:", err);
       
-      const isQuotaError = err.message?.includes("Quota") || err.code === 'resource-exhausted';
+      const isQuotaError = err.message?.includes("Quota") || err.message?.includes("quota") || err.code === 'resource-exhausted';
       
       // If we have ANY cached data, even stale, use it as fallback
       if (cachedData) {
@@ -99,7 +99,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLatestNews([]);
         setTrendingNews([]);
         setError(isQuotaError
-          ? "Daily dispatch limit reached. Archives will reset at midnight."
+          ? "Daily dispatch limit reached. The Reports will reset at midnight."
           : "Sync unavailable. Please try again later.");
       }
       

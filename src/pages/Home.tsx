@@ -65,15 +65,14 @@ export default function Home() {
         <AnimatePresence>
           {error && (
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute -top-12 left-0 right-0 bg-neutral-900 border border-neutral-800 p-2 text-center rounded-sm z-40"
+              exit={{ opacity: 0, y: -5 }}
+              className="absolute -top-10 left-0 right-0 py-1 text-center border-b border-neutral-100"
             >
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Status: ARCHIVE_MODE</span>
+              <div className="flex items-center justify-center gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-news-red animate-pulse" />
-                <span className="text-[9px] font-medium text-neutral-400 capitalize">{error.toLowerCase()}</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-500">{error}</span>
               </div>
             </motion.div>
           )}

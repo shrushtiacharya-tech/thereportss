@@ -68,14 +68,14 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
         }
       } catch (err: any) {
         if (isMounted) {
-          const isQuotaError = err.message?.includes("Quota") || err.code === 'resource-exhausted';
+          const isQuotaError = err.message?.includes("Quota") || err.message?.includes("quota") || err.code === 'resource-exhausted';
           
           // Fallback to memory cache if hit quota or network error
           if (newsCache[cacheKey]) {
             setNews(newsCache[cacheKey].data);
-            setError(isQuotaError ? "Daily limit reached. Using memory cache." : "Network error. Using cache.");
+            setError(isQuotaError ? "Dispatch limit reached. Using memory cache." : "Network error. Using cache.");
           } else {
-            setError(isQuotaError ? "Daily dispatch limit reached." : "Failed to fetch news.");
+            setError(isQuotaError ? "Daily dispatch limit reached. Reset at midnight." : "Failed to fetch news.");
           }
           setLoading(false);
         }

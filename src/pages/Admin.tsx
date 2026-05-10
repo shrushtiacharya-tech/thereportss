@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { 
   collection, 
   addDoc, 
@@ -46,6 +47,7 @@ export default function Admin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
   const ADMIN_EMAIL = 'shrushtiacharya@gmail.com';
 
@@ -124,9 +126,12 @@ export default function Admin() {
       });
       
       setLoading(false);
-    }, (err) => {
+      setQuotaExceeded(false);
+    }, (err: any) => {
       console.error("Firestore Listen Error:", err);
-      // Log error but don't throw to avoid crashing
+      if (err.message?.includes("Quota") || err.code === 'resource-exhausted') {
+        setQuotaExceeded(true);
+      }
       setLoading(false);
     });
 
@@ -148,6 +153,10 @@ export default function Admin() {
       console.error("Login failed:", err);
       if (err.code === 'auth/popup-blocked') {
         setLoginError("Login popup was blocked. Please enable popups for this site.");
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setLoginError("This domain is not authorized for authentication. Please add it to the 'Authorized domains' in your Firebase Authentication settings.");
+      } else if (err.code === 'auth/internal-error' && err.message?.includes('cross-origin')) {
+        setLoginError("Cross-origin authentication blocked. Try opening the app in a new tab.");
       } else {
         setLoginError(err.message || "Authentication failed. Please try again.");
       }
@@ -327,6 +336,9 @@ export default function Admin() {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="flex flex-col items-center gap-8 max-w-md w-full px-6">
+          <Link to="/">
+            <img src="/logo.svg" alt="THE REPORTS" className="h-16 w-auto mb-2" />
+          </Link>
           <div className="p-6 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-full">
             <ShieldCheck size={64} className={user ? "text-red-300" : "text-neutral-300"} />
           </div>
@@ -370,6 +382,10 @@ export default function Admin() {
 
   return (
     <div className="news-container py-10">
+      <Helmet>
+        <title>Editorial Portal | The Reports</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {/* Header with Exit */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12 border-b-2 border-black pb-8">
         <div>
@@ -389,6 +405,33 @@ export default function Admin() {
           </button>
         </div>
       </div>
+
+      {/* Quota Warning */}
+      {quotaExceeded && (
+        <div className="mb-12 p-8 bg-red-600 text-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-start gap-6">
+            <ShieldCheck size={48} className="shrink-0" />
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-black uppercase tracking-tighter">System Alert: Cloud Quota Exhausted</h2>
+              <p className="text-xs font-mono uppercase tracking-[0.1em] leading-relaxed opacity-90">
+                The Daily Cloud Read Operations limit for the Spark free tier has been reached. 
+                Write operations (saving articles) may still work, but browsing the registry is restricted.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-4">
+                <div className="bg-white/20 px-3 py-1 text-[10px] font-bold">RESET: MIDNIGHT UTC</div>
+                <a 
+                  href="https://firebase.google.com/pricing" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="bg-black text-white px-4 py-1 text-[10px] font-black hover:bg-white hover:text-black transition-colors"
+                >
+                  UPGRADE FOR UNLIMITED DATA
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Analytics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">

@@ -28,7 +28,9 @@ export default function Footer() {
       <div className="news-container">
         <div className="flex flex-col lg:flex-row justify-between gap-12 mb-16">
           <div className="lg:w-1/3">
-            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-[#003366]">The Reports</h2>
+            <Link to="/">
+              <img src="/logo.svg" alt="THE REPORTS" className="h-12 w-auto mb-6" />
+            </Link>
             <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
               Independent journalism following the highest standards of accuracy and objectivity since 2026. 
               Delivered daily from our bureaus in Mumbai and New Delhi to a global audience.

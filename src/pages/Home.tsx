@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { CATEGORIES } from '../data';
@@ -49,6 +50,16 @@ export default function Home() {
 
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>The Reports | Authoritative Global Journalism</title>
+        <meta name="description" content="Access independent analytical dispatches on global politics, business, and technology. The Reports editorial portal for modern terminal journalism." />
+        <meta property="og:title" content="The Reports | Authoritative Global Journalism" />
+        <meta property="og:description" content="Independent analytical dispatches on global politics, business, and technology." />
+        <meta property="og:type" content="website" />
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content="The Reports | Authoritative Global Journalism" />
+        <meta property="twitter:description" content="Independent analytical dispatches on global politics, business, and technology." />
+      </Helmet>
       {/* Navigation & Search Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 md:mb-12 border-y border-black py-4 md:py-6 relative">
         <AnimatePresence>

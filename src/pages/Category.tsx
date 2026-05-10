@@ -1,14 +1,22 @@
 import { useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ArticleCard from '../components/ArticleCard';
 import Sidebar from '../components/Sidebar';
 import { useNews } from '../hooks/useNews';
 
 export default function Category() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const { news: filteredArticles, loading } = useNews(20, categoryId?.charAt(0).toUpperCase() + categoryId!.slice(1));
+  const categoryTitle = categoryId ? categoryId.charAt(0).toUpperCase() + categoryId.slice(1) : '';
+  const { news: filteredArticles, loading } = useNews(20, categoryTitle);
 
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>{categoryTitle} | The Reports</title>
+        <meta name="description" content={`Explore the latest ${categoryTitle} news, analysis, and deep-dives from The Reports global editorial team.`} />
+        <meta property="og:title" content={`${categoryTitle} Dispatch | The Reports`} />
+        <meta property="og:description" content={`In-depth reporting and analytical coverage of the ${categoryTitle} sector.`} />
+      </Helmet>
       <div className="border-b-4 border-ink pb-4 mb-12">
         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
           {categoryId}

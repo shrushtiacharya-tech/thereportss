@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ARTICLES } from '../data';
 import Sidebar from '../components/Sidebar';
 import { Share2, Bookmark, MessageSquare, ChevronLeft } from 'lucide-react';
@@ -73,6 +74,21 @@ export default function Article() {
 
   return (
     <div className="news-container pt-8">
+      <Helmet>
+        <title>{article.title} | The Reports</title>
+        <meta name="description" content={article.summary} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={`${article.title} | The Reports`} />
+        <meta property="og:description" content={article.summary} />
+        {article.imageUrl && <meta property="og:image" content={article.imageUrl} />}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content={`${article.title} | The Reports`} />
+        <meta property="twitter:description" content={article.summary} />
+        {article.imageUrl && <meta property="twitter:image" content={article.imageUrl} />}
+        {article.author && <meta property="article:author" content={article.author} />}
+        {article.category && <meta property="article:section" content={article.category} />}
+      </Helmet>
+
       <Link to="/" className="inline-flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-neutral-400 hover:text-ink transition-colors mb-8 group">
         <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
         Back to News

@@ -58,9 +58,11 @@ export default function Header() {
       {/* Main Branding */}
       <div className="news-container py-6 md:py-10 flex flex-col items-center gap-1">
         <Link to="/" className="flex flex-col items-center group">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-black text-[#003366] tracking-tighter uppercase leading-tight text-center">
-            The Reports
-          </h1>
+          <img 
+            src="/logo.svg" 
+            alt="THE REPORTS" 
+            className="h-16 sm:h-20 md:h-24 lg:h-32 w-auto transition-transform group-hover:scale-[1.02] duration-500" 
+          />
           <div className="w-full flex items-center gap-4 mt-2 md:mt-4">
             <div className="flex-grow h-[1px] bg-neutral-200" />
             <p className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.6em] font-bold text-neutral-500 whitespace-nowrap">
@@ -146,7 +148,9 @@ export default function Header() {
               className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-paper z-[101] shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b-4 border-black flex justify-between items-center bg-[#003366] text-white">
-                <span className="text-xs font-black uppercase tracking-[0.3em]">Dispatch Center</span>
+                <Link to="/" onClick={() => setMobileMenuOpen(false)}>
+                  <img src="/logo.svg" alt="THE REPORTS" className="h-8 w-auto invert brightness-0" style={{ filter: 'brightness(0) invert(1)' }} />
+                </Link>
                 <button onClick={() => setMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>

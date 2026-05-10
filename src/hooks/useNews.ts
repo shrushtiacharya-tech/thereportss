@@ -6,7 +6,7 @@ import { NewsItem } from '../types';
 import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 
 const newsCache: Record<string, { data: NewsItem[], timestamp: number }> = {};
-const CATEGORY_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
+const CATEGORY_CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes for better quota management
 
 export function useNews(count: number = 10, category?: string, sortBy: 'latest' | 'trending' = 'latest') {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -64,15 +64,18 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
           
           setNews(items);
           setLoading(false);
+          setError(null);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (isMounted) {
+          const isQuotaError = err.message?.includes("Quota") || err.code === 'resource-exhausted';
+          
           // Fallback to memory cache if hit quota or network error
           if (newsCache[cacheKey]) {
             setNews(newsCache[cacheKey].data);
+            setError(isQuotaError ? "Daily limit reached. Using memory cache." : "Network error. Using cache.");
           } else {
-            handleFirestoreError(err, OperationType.LIST, 'news');
-            setError('Failed to fetch news');
+            setError(isQuotaError ? "Daily dispatch limit reached." : "Failed to fetch news.");
           }
           setLoading(false);
         }

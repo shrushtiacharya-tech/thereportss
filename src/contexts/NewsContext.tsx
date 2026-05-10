@@ -15,7 +15,7 @@ interface NewsContextType {
 const NewsContext = createContext<NewsContextType | undefined>(undefined);
 
 const CACHE_KEY = 'thereports_news_cache';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY = 60 * 60 * 1000; // 60 minutes for better quota management
 
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
@@ -30,6 +30,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cached) {
       try {
         cachedData = JSON.parse(cached);
+        // If data is very fresh, don't even try the network to save quota
         if (Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
           setLatestNews(cachedData.data.latest);
           setTrendingNews(cachedData.data.trending);
@@ -85,21 +86,24 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error("News fetch error:", err);
       
+      const isQuotaError = err.message?.includes("Quota") || err.code === 'resource-exhausted';
+      
       // If we have ANY cached data, even stale, use it as fallback
       if (cachedData) {
         setLatestNews(cachedData.data.latest);
         setTrendingNews(cachedData.data.trending);
-        setError("Operating from archive cache (Network limit reached)");
+        setError(isQuotaError 
+          ? "Daily dispatch limit reached. Browsing archives (Cache Mode)." 
+          : "Operating from archive cache (Network offline)");
       } else {
         setLatestNews([]);
         setTrendingNews([]);
-        setError("Sync unavailable. Please try again later.");
+        setError(isQuotaError
+          ? "Daily dispatch limit reached. Archives will reset at midnight."
+          : "Sync unavailable. Please try again later.");
       }
       
-      // Log firestore error if it's a quota issue
-      if (err.message?.includes("Quota")) {
-        handleFirestoreError(err, OperationType.LIST, 'news');
-      }
+      // Don't throw the error, just handle it in UI
     } finally {
       setLoading(false);
     }

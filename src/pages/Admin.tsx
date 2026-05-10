@@ -40,10 +40,14 @@ import {
 
 export default function Admin() {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const ADMIN_EMAIL = 'shrushtiacharya@gmail.com';
 
   const [formData, setFormData] = useState({
     title: '',
@@ -67,7 +71,8 @@ export default function Admin() {
 
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      if (u) {
+      setAuthLoading(false);
+      if (u && u.email === ADMIN_EMAIL) {
         // Clear previous if any (though auth should only fire once for login/logout usually)
         if (cleanup) cleanup();
         cleanup = setupListeners();
@@ -120,7 +125,9 @@ export default function Admin() {
       
       setLoading(false);
     }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'news');
+      console.error("Firestore Listen Error:", err);
+      // Log error but don't throw to avoid crashing
+      setLoading(false);
     });
 
     return () => {
@@ -129,15 +136,28 @@ export default function Admin() {
   };
 
   const login = async () => {
+    setLoginError(null);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (err) {
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      if (result.user.email !== ADMIN_EMAIL) {
+        setLoginError(`Access denied. ${result.user.email} is not authorized.`);
+      }
+    } catch (err: any) {
       console.error("Login failed:", err);
+      if (err.code === 'auth/popup-blocked') {
+        setLoginError("Login popup was blocked. Please enable popups for this site.");
+      } else {
+        setLoginError(err.message || "Authentication failed. Please try again.");
+      }
     }
   };
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    signOut(auth);
+    setLoginError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,26 +314,55 @@ export default function Admin() {
     return matchesSearch && matchesCategory;
   });
 
-  if (!user) {
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40">
+        <Loader2 className="animate-spin text-neutral-200 mb-4" size={60} />
+        <p className="text-xs font-mono uppercase tracking-widest text-neutral-400">Verifying Identity...</p>
+      </div>
+    );
+  }
+
+  if (!user || user.email !== ADMIN_EMAIL) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="flex flex-col items-center gap-8 max-w-md w-full px-6">
           <div className="p-6 bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-full">
-            <ShieldCheck size={64} className="text-neutral-300" />
+            <ShieldCheck size={64} className={user ? "text-red-300" : "text-neutral-300"} />
           </div>
           <div className="text-center">
-            <h1 className="text-3xl font-serif font-black uppercase mb-3 tracking-tighter">Secure Terminal</h1>
+            <h1 className="text-3xl font-serif font-black uppercase mb-3 tracking-tighter">
+              {user ? "Unauthorized" : "Secure Terminal"}
+            </h1>
             <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest leading-loose">
-              Restricted access area. Please identify yourself to access "The Reports" editorial systems.
+              {user 
+                ? `Identity established as ${user.email}, but access to "The Reports" editorial systems is restricted.`
+                : "Restricted access area. Please identify yourself to access \"The Reports\" editorial systems."
+              }
             </p>
+            {loginError && (
+              <p className="mt-4 p-3 bg-red-50 text-red-600 text-[10px] font-mono uppercase border border-red-100">
+                {loginError}
+              </p>
+            )}
           </div>
-          <button 
-            onClick={login}
-            className="flex items-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl"
-          >
-            <LogIn size={18} />
-            Identify with Google
-          </button>
+          {!user ? (
+            <button 
+              onClick={login}
+              className="flex items-center gap-3 bg-[#003366] text-white px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-black transition-all shadow-xl hover:shadow-2xl"
+            >
+              <LogIn size={18} />
+              Identify with Google
+            </button>
+          ) : (
+            <button 
+              onClick={logout}
+              className="flex items-center gap-3 border-2 border-black px-10 py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-neutral-100 transition-all shadow-xl"
+            >
+              <LogOut size={18} />
+              Switch Account
+            </button>
+          )}
         </div>
       </div>
     );

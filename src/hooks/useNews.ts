@@ -42,14 +42,14 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
           if (quotaHit || (Date.now() - timestamp < CATEGORY_CACHE_EXPIRY)) {
             setNews(data);
             setLoading(false);
-            if (quotaHit) setError("Archive Mode: Dispatch limit reached.");
+            if (quotaHit) setError("Archive Mode: Optimized session active.");
             return;
           }
         } catch (e) {
           localStorage.removeItem(persistentKey);
         }
       } else if (quotaHit) {
-        setError("Dispatch limit reached.");
+        setError("Archive Mode Enabled.");
         setLoading(false);
         return;
       }
@@ -113,17 +113,17 @@ export function useNews(count: number = 10, category?: string, sortBy: 'latest' 
           const stored = localStorage.getItem(persistentKey);
           if (newsCache[cacheKey]) {
             setNews(newsCache[cacheKey].data);
-            setError(isQuotaError ? "Dispatch limit reached. Using memory cache." : "Network error. Using cache.");
+            setError(isQuotaError ? "Optimization Mode: Using local memory." : "Network error. Using cache.");
           } else if (stored) {
             try {
               const { data } = JSON.parse(stored);
               setNews(data);
-              setError(isQuotaError ? "Dispatch limit reached. Serving from archives." : "Network error. Serving from archives.");
+              setError(isQuotaError ? "Optimization Mode: Serving from archives." : "Network error. Serving from archives.");
             } catch (e) {
-              setError(isQuotaError ? "Daily dispatch limit reached." : "Failed to fetch news.");
+              setError(isQuotaError ? "Service active in archive mode." : "Failed to fetch news.");
             }
           } else {
-            setError(isQuotaError ? "Daily dispatch limit reached. Reset at midnight." : "Failed to fetch news.");
+            setError(isQuotaError ? "Sync optimized for local sessions." : "Failed to fetch news.");
           }
           setLoading(false);
         }

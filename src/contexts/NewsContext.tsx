@@ -50,7 +50,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLatestNews(cachedData.data.latest);
           setTrendingNews(cachedData.data.trending);
           setLoading(false);
-          setError("Dispatch limit reached. Archive Mode.");
+          setError("Archive Mode: Optimized session active.");
           return;
         }
       }
@@ -108,13 +108,13 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLatestNews(cachedData.data.latest);
         setTrendingNews(cachedData.data.trending);
         setError(isQuotaError 
-          ? "Daily dispatch limit reached. Browsing archives (Cache Mode)." 
+          ? "Browsing from local archives (Optimization Mode)" 
           : "Operating from archive cache (Network offline)");
       } else {
         setLatestNews([]);
         setTrendingNews([]);
         setError(isQuotaError
-          ? "Daily dispatch limit reached. The Reports will reset at midnight."
+          ? "System is currently optimized for archives. Try again later."
           : "Sync unavailable. Please try again later.");
       }
       

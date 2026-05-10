@@ -406,27 +406,19 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Quota Warning */}
+      {/* Quota Warning (Removed internal pointers to paid tiers per user request) */}
       {quotaExceeded && (
-        <div className="mb-12 p-8 bg-red-600 text-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <div className="mb-12 p-8 bg-black text-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(31,31,31,1)]">
           <div className="flex items-start gap-6">
             <ShieldCheck size={48} className="shrink-0" />
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-black uppercase tracking-tighter">System Alert: Cloud Quota Exhausted</h2>
+              <h2 className="text-xl font-black uppercase tracking-tighter">System Notice: Archive Mode Active</h2>
               <p className="text-xs font-mono uppercase tracking-[0.1em] leading-relaxed opacity-90">
-                The Daily Cloud Read Operations limit for the Spark free tier has been reached. 
-                Write operations (saving articles) may still work, but browsing the registry is restricted.
+                The editorial database is currently operating in high-demand mode (Archive Access). 
+                Viewing previous dispatches may be limited. Direct article saves remain functional.
               </p>
               <div className="mt-4 flex flex-wrap gap-4">
-                <div className="bg-white/20 px-3 py-1 text-[10px] font-bold">RESET: MIDNIGHT UTC</div>
-                <a 
-                  href="https://firebase.google.com/pricing" 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="bg-black text-white px-4 py-1 text-[10px] font-black hover:bg-white hover:text-black transition-colors"
-                >
-                  UPGRADE FOR UNLIMITED DATA
-                </a>
+                <div className="bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Restoration: Daily Cycle</div>
               </div>
             </div>
           </div>

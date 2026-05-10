@@ -30,11 +30,25 @@ export default function Sidebar({ showHeader = true }: SidebarProps) {
     const fetchMarkets = async () => {
       try {
         const response = await fetch('/api/markets');
-        if (!response.ok) throw new Error('API Error');
+        const contentType = response.headers.get('content-type');
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Received non-JSON response from /api/markets:', text.substring(0, 100));
+          throw new Error('Received non-JSON response');
+        }
+        
         const data = await response.json();
-        setMarkets(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setMarkets(data);
+        }
       } catch (error) {
-        console.error('Failed to fetch real market data:', error);
+        console.error('Failed to update market data:', error);
+        // We keep the previous/initial data on failure
       }
     };
 

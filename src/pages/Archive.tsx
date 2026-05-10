@@ -13,6 +13,29 @@ export default function Archive() {
 
   useEffect(() => {
     async function fetchArchive() {
+      const cacheKey = 'thereports_archive_cache';
+      const stored = localStorage.getItem(cacheKey);
+      const quotaHit = sessionStorage.getItem('thereports_quota_hit');
+      
+      if (stored) {
+        try {
+          const { data, timestamp } = JSON.parse(stored);
+          const ARCHIVE_CACHE_EXPIRY = 4 * 60 * 60 * 1000; // 4 hours
+          if (quotaHit || (Date.now() - timestamp < ARCHIVE_CACHE_EXPIRY)) {
+            setArticles(data);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
+      if (quotaHit && !stored) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
@@ -20,9 +43,24 @@ export default function Archive() {
           id: doc.id,
           ...doc.data()
         } as NewsItem));
+        
         setArticles(items);
-      } catch (err) {
+        
+        // Cache the result
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: items,
+          timestamp: Date.now()
+        }));
+      } catch (err: any) {
         console.error("Archive fetch error:", err);
+        const isQuotaError = err.message?.includes("Quota") || err.message?.includes("quota");
+        if (isQuotaError && stored) {
+          // If we hit quota but have ANY stored data, even if old, use it
+          try {
+            const { data } = JSON.parse(stored!);
+            setArticles(data);
+          } catch (e) {}
+        }
       } finally {
         setLoading(false);
       }

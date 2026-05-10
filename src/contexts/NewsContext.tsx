@@ -44,12 +44,23 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Check if we hit quota recently
+      if (sessionStorage.getItem('thereports_quota_hit')) {
+        if (cachedData) {
+          setLatestNews(cachedData.data.latest);
+          setTrendingNews(cachedData.data.trending);
+          setLoading(false);
+          setError("Dispatch limit reached. Archive Mode.");
+          return;
+        }
+      }
+
       const latestQuery = query(
         collection(db, 'news'),
         where('status', '==', 'published'),
         where('originalUrl', '==', 'manual-entry'),
         orderBy('publishedAt', 'desc'),
-        limit(15)
+        limit(30)
       );
 
       const trendingQuery = query(
@@ -57,7 +68,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         where('status', '==', 'published'),
         where('originalUrl', '==', 'manual-entry'),
         orderBy('views', 'desc'),
-        limit(10)
+        limit(20)
       );
 
       const [latestSnap, trendingSnap] = await Promise.all([
@@ -87,6 +98,10 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("News fetch error:", err);
       
       const isQuotaError = err.message?.includes("Quota") || err.message?.includes("quota") || err.code === 'resource-exhausted';
+      
+      if (isQuotaError) {
+        sessionStorage.setItem('thereports_quota_hit', 'true');
+      }
       
       // If we have ANY cached data, even stale, use it as fallback
       if (cachedData) {

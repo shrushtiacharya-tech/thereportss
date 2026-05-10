@@ -17,11 +17,12 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const { latestNews, trendingNews, loading: isContextLoading, error: contextError } = useNewsContext();
   
-  // Use custom hook for category filtering, but fallback to context for "All"
+  // Use custom hook for category filtering, but skip fetch for "All" to save quota
   const { news: categoryNews, loading: isCategoryLoading, error: categoryError } = useNews(
     40, 
     selectedCategory === 'All' ? undefined : selectedCategory, 
-    sortBy
+    sortBy,
+    selectedCategory !== 'All'
   );
 
   const error = categoryError || contextError;

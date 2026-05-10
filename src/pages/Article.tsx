@@ -23,22 +23,57 @@ export default function Article() {
     if (staticArticle || !articleId) return;
     
     const fetchDynamic = async () => {
+      const cacheKey = `article_cache_${articleId}`;
+      const stored = localStorage.getItem(cacheKey);
+      
+      if (stored) {
+        try {
+          const { data, timestamp } = JSON.parse(stored);
+          const ARTICLE_CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2 hours
+          if (Date.now() - timestamp < ARTICLE_CACHE_EXPIRY) {
+            setDynamicArticle(data);
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
       setLoading(true);
       try {
         const docRef = doc(db, "news", articleId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data() as NewsItem;
-          setDynamicArticle({
+          const articleData = {
             ...data,
             author: data.author || 'The Reports Team',
             body: data.body || data.summary, // Use body if available, fallback to summary
-          });
+          };
+          setDynamicArticle(articleData);
           
-          // Increment views asynchronously
-          updateDoc(docRef, {
-            views: increment(1)
-          }).catch(err => console.error("Error incrementing views:", err));
+          // Cache the article
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: articleData,
+            timestamp: Date.now()
+          }));
+          
+          // Increment views asynchronously - only on fresh fetch to save write quota
+          // Use sessionStorage to prevent multiple increments in same session
+          const sessionViewKey = `viewed_${articleId}`;
+          if (!sessionStorage.getItem(sessionViewKey)) {
+            updateDoc(docRef, {
+              views: increment(1)
+            })
+            .then(() => sessionStorage.setItem(sessionViewKey, 'true'))
+            .catch(err => {
+              if (err.message?.includes("Quota")) {
+                console.warn("View increment skipped: Quota reached");
+              } else {
+                console.error("Error incrementing views:", err);
+              }
+            });
+          }
         }
       } catch (err: any) {
         console.error("Error fetching dynamic article:", err);

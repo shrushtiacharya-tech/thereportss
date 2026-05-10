@@ -10,42 +10,68 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+// Yahoo Finance Configuration
+const yahooFinance = new YahooFinance({
+  queue: {
+    concurrency: 2
+  }
+});
+
 const dbAdmin = admin.firestore();
 
-const yahooFinance = new (YahooFinance as any)();
+const app = express();
+
+export default app;
 
 async function startServer() {
-  const app = express();
   const PORT = 3000;
 
   app.use(cors());
   app.use(express.json());
 
+  // Log all requests to help debug
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
   // Market Data Route
   app.get('/api/markets', async (req, res) => {
+    console.log('Fetching market data...');
     try {
       const symbols = ['^BSESN', '^NSEI', '^NSEBANK', 'INR=X'];
+      
+      // Fetch quotes using the initialized yahooFinance instance
       const results = await Promise.all(
-        symbols.map(symbol => yahooFinance.quote(symbol))
-      ) as any[];
+        symbols.map(symbol => yahooFinance.quote(symbol).catch(err => {
+          console.error(`Error fetching ${symbol}:`, err);
+          return null;
+        }))
+      );
 
-      const marketData = results.map(quote => {
-        let name = quote.symbol;
-        if (quote.symbol === '^BSESN') name = 'SENSEX';
-        if (quote.symbol === '^NSEI') name = 'NIFTY 50';
-        if (quote.symbol === '^NSEBANK') name = 'NIFTY BANK';
-        if (quote.symbol === 'INR=X') name = 'USD/INR';
+      const marketData = results
+        .filter(quote => quote !== null)
+        .map(quote => {
+          let name = quote.symbol;
+          if (quote.symbol === '^BSESN') name = 'SENSEX';
+          if (quote.symbol === '^NSEI') name = 'NIFTY 50';
+          if (quote.symbol === '^NSEBANK') name = 'NIFTY BANK';
+          if (quote.symbol === 'INR=X') name = 'USD/INR';
 
-        return {
-          code: name,
-          value: quote.regularMarketPrice?.toLocaleString('en-IN', { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
-          }) || 'N/A',
-          change: `${quote.regularMarketChangePercent?.toFixed(2)}%`,
-          isUp: (quote.regularMarketChangePercent || 0) >= 0
-        };
-      });
+          return {
+            code: name,
+            value: quote.regularMarketPrice?.toLocaleString('en-IN', { 
+              minimumFractionDigits: 2, 
+              maximumFractionDigits: 2 
+            }) || 'N/A',
+            change: `${quote.regularMarketChangePercent?.toFixed(2)}%`,
+            isUp: (quote.regularMarketChangePercent || 0) >= 0
+          };
+        });
+
+      if (marketData.length === 0) {
+        throw new Error('No market data could be retrieved');
+      }
 
       res.json(marketData);
     } catch (error) {
@@ -74,4 +100,7 @@ async function startServer() {
   });
 }
 
-startServer();
+// Start the server only if run directly (not via Vercel/imported)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  startServer();
+}
